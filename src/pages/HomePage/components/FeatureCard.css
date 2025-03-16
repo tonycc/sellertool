@@ -1,0 +1,31 @@
+.feature-card {
+  height: 100%;
+  text-align: center;
+  padding: 24px;
+  transition: all 0.3s;
+}
+
+.feature-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  margin-bottom: 12px;
+}
+
+.feature-description {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+@media (max-width: 768px) {
+  .feature-icon {
+    font-size: 36px;
+  }
+}

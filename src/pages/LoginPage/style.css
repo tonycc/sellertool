@@ -1,0 +1,47 @@
+.login-page {
+  padding: 40px 0;
+  min-height: calc(100vh - 64px - 310px);
+  display: flex;
+  align-items: center;
+}
+
+.login-card {
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.description {
+  margin-bottom: 24px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.login-button {
+  height: 40px;
+  font-size: 16px;
+}
+
+.forgot-password {
+  float: right;
+}
+
+.error-alert {
+  margin-bottom: 24px;
+}
+
+.register-link {
+  font-size: 16px;
+}

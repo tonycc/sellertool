@@ -1,0 +1,40 @@
+.forgot-password-page {
+  padding: 40px 0;
+  min-height: calc(100vh - 64px - 310px);
+  display: flex;
+  align-items: center;
+}
+
+.forgot-password-card {
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.description {
+  margin-bottom: 24px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.error-alert {
+  margin-bottom: 24px;
+}
+
+.submit-button {
+  height: 40px;
+  font-size: 16px;
+}
+
+.links-container {
+  margin-top: 16px;
+}
+
+.back-link {
+  font-size: 16px;
+}

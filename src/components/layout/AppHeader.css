@@ -1,0 +1,129 @@
+.app-header {
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  position: relative;
+}
+
+.logo {
+  flex: 0 0 auto;
+  min-width: 120px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.logo a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.main-menu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom: none;
+  background: transparent;
+  line-height: 64px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.header-right {
+  margin-left: auto;
+  flex: 0 0 auto;
+  min-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 用户下拉菜单按钮样式 */
+.user-dropdown-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 64px;
+  border-radius: 20px;
+  transition: all 0.3s;
+  margin-left: 8px;
+}
+
+.user-dropdown-btn:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* 用户头像样式 */
+.user-avatar {
+  background-color: #1890ff;
+  margin-right: 8px;
+  transition: transform 0.3s;
+}
+
+.user-dropdown-btn:hover .user-avatar {
+  transform: scale(1.1);
+}
+
+/* 用户名样式 */
+.username {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-left: 8px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 自定义下拉菜单样式 - 通过全局样式覆盖 */
+:global(.ant-dropdown-menu) {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  padding: 4px 0;
+}
+
+:global(.ant-dropdown-menu-item) {
+  padding: 8px 16px;
+  transition: all 0.3s;
+}
+
+:global(.ant-dropdown-menu-item:hover) {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+:global(.ant-dropdown-menu-item .anticon) {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .nav-menu {
+    display: none;
+  }
+  
+  .header-container {
+    padding: 0 16px;
+  }
+  
+  .username {
+    display: none;
+  }
+  
+  .user-avatar {
+    margin-right: 0;
+  }
+  
+  .main-menu {
+    position: static;
+    transform: none;
+    margin: 0 auto;
+  }
+}

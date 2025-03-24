@@ -1,0 +1,167 @@
+.report-page {
+  display: flex;
+  min-height: 100vh; /* 修改了min-height */
+  position: relative;
+  z-index: 1;
+}
+
+.report-sider {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+  z-index: 5; /* 确保侧边栏在适当的层级 */
+}
+
+.sider-header {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.report-menu {
+  margin-top: 16px;
+  border-right: 0;
+}
+
+.report-menu .ant-menu-item:hover {
+  color: #1890ff;
+}
+
+.report-menu .ant-menu-item-selected {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.report-content {
+  padding: 24px;
+  background: #f0f2f5; /* 修改了background-color */
+  flex: 1;
+  overflow: auto;
+  
+}
+
+.page-header {
+  margin-bottom: 24px; /* 修改了margin-bottom */
+  text-align: center;
+  
+}
+
+.upload-card {
+  height: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.upload-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+}
+
+.report-uploader {
+  padding: 16px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ant-upload-drag-icon {
+  font-size: 48px;
+  color: #1890ff;
+}
+
+.ant-upload-text {
+  font-size: 16px;
+  margin: 16px 0;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.ant-upload-hint {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.reports-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  min-height: 300px;
+  background: #fff; /* 添加了background */
+}
+
+.reports-card .ant-card-body {
+  padding-top: 12px;
+}
+
+.reports-card .ant-select {
+  margin-right: 8px;
+}
+
+/* 添加搜索栏和上传按钮的样式 */
+.search-upload-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .search-upload-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .search-filters {
+    width: 100%;
+  }
+  
+  .search-upload-row .ant-btn {
+    margin-top: 8px;
+  }
+}
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  padding: 48px; /* 添加了padding */
+  text-align: center; /* 添加了text-align */
+}
+
+/* 上传弹出层样式 */
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal .report-uploader {
+  margin-top: 16px;
+}
+
+.ant-modal .ant-upload-drag {
+  border: 2px dashed #d9d9d9;
+}
+
+.ant-modal .ant-upload-drag:hover {
+  border-color: #1890ff;
+}
+
+@media (max-width: 768px) {
+  .report-content {
+    padding: 16px 8px;
+  }
+  
+  .page-header {
+    margin-bottom: 16px;
+  }
+  
+  .report-uploader {
+    height: 200px;
+    padding: 16px;
+  }
+}

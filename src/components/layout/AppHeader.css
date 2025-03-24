@@ -34,7 +34,8 @@
   background: transparent;
   line-height: 64px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  
 }
 
 .header-right {

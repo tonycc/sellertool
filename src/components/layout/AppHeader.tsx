@@ -54,8 +54,16 @@ const AppHeader: React.FC = () => {
               label: <Link to="/">首页</Link>,
             },
             {
+              key: 'reports',
+              label: <Link to="/reports">报告分析</Link>,
+            },
+            {
               key: 'about',
               label: <Link to="/about">关于</Link>,
+            },
+            {
+              key: 'contact',
+              label: <Link to="/contact">联系我们</Link>,
             }
           ]}
         />

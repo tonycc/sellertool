@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Checkbox, Typography, Card, Alert, Divider } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { post } from '../../api/client';
 import './style.css';
 
 const { Title, Paragraph } = Typography;
 
+// 定义登录API返回的数据结构
+interface LoginResponse {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  token: string;
+}
+
 const LoginPage: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  
+  // 获取重定向路径，如果存在的话
+  const from = location.state?.from?.pathname || '/';
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -21,21 +35,56 @@ const LoginPage: React.FC = () => {
     
     try {
       // 调用登录API
-      const data = await post('/auth/login', {
+      const data = await post<LoginResponse>('/api/auth/login', {
         email: values.email,
         password: values.password
       });
       
-      // 登录成功后保存用户信息并跳转到首页
-      login(data.user);
-      navigate('/');
+      // 登录成功后保存用户信息并跳转到原来的页面
+      login(data.user, data.token);
+      navigate(from, { replace: true });
     } catch (err: any) {
       // 统一错误处理逻辑
       if (err.response) {
-        if (err.response.status === 403 && err.response.data.message === '请先验证您的邮箱') {
-          setError('您的邮箱尚未验证，请查收验证邮件');
+        const errorData = err.response.data;
+        if (errorData && errorData.errorType) {
+          switch(errorData.errorType) {
+            case 'invalid_password':
+              setError('邮箱或密码错误，请重新输入');
+              break;
+            case 'email_not_found':
+              setError('该邮箱未注册');
+              break;
+            case 'email_not_verified':
+              setError('您的邮箱尚未验证，请查收验证邮件');
+              break;
+            default:
+              setError(errorData.message || '登录失败，请检查邮箱和密码');
+          }
         } else {
-          setError(err.response.data.message || '登录失败，请检查邮箱和密码');
+          setError('服务器连接失败，请稍后重试');
+        }
+      } else if (err.errorType) {
+        // 处理从client.ts拦截器中返回的错误对象
+        switch(err.errorType) {
+          case 'invalid_password':
+            setError('邮箱或密码错误，请重新输入');
+            break;
+          case 'email_not_found':
+            setError('该邮箱未注册');
+            break;
+          case 'email_not_verified':
+          case 'forbidden':
+            setError('您的邮箱尚未验证，请查收验证邮件');
+            break;
+          case 'network_error':
+            setError('服务器无响应，请检查网络连接');
+            break;
+          case 'request_error':
+            setError('请求配置错误，请稍后重试');
+            break;
+          default:
+            setError(err.message || '登录失败，请检查邮箱和密码');
         }
       } else {
         setError('服务器连接失败，请稍后重试');

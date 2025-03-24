@@ -1,0 +1,144 @@
+.report-detail-page {
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  text-align: center;
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.upload-time {
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 8px;
+  
+}
+
+.summary-section {
+  margin-bottom: 24px;
+}
+
+.metrics-card,
+.data-table-card,
+.chart-container {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  transition: all 0.3s;
+  height: auto;
+  min-height: 450px;
+  width: 100%;
+  overflow: visible; /* 确保内容不被裁剪 */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.metrics-card:hover,
+.data-table-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+}
+
+
+/* 标签页样式 */
+.report-tabs {
+  margin-bottom: 24px;
+}
+
+.report-tabs .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+.report-tabs .ant-tabs-tab {
+  font-size: 16px;
+  padding: 8px 16px;
+}
+
+/* 四象限分析样式 */
+.quadrant-summary {
+  margin-bottom: 24px;
+}
+
+.quadrant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+}
+
+.quadrant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+}
+
+.quadrant-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.quadrant-title {
+  margin-left: 8px;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.help-icon {
+  margin-left: 8px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.star-card .quadrant-card-header {
+  color: #52c41a;
+}
+
+.problem-card .quadrant-card-header {
+  color: #fa8c16;
+}
+
+.potential-card .quadrant-card-header {
+  color: #1890ff;
+}
+
+.ineffective-card .quadrant-card-header {
+  color: #bfbfbf;
+}
+
+
+
+.keyword-tabs {
+  margin-top: 16px;
+}
+
+.keyword-tabs .ant-tabs-tab {
+  padding: 8px 16px;
+}
+
+@media (max-width: 768px) {
+  .report-detail-page {
+    padding: 16px 8px;
+  }
+  
+  .page-header {
+    margin-bottom: 16px;
+  }
+  
+  .back-button {
+    position: static;
+    margin-bottom: 16px;
+    display: block;
+  }
+}

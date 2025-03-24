@@ -8,11 +8,16 @@ class User extends Model {
     return bcrypt.compare(candidatePassword, this.password);
   }
 }
-
 User.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   username: {
     type: DataTypes.STRING(20),
     allowNull: true,
+    unique: true,
     // 移除unique约束
     validate: {
       len: [3, 20],
@@ -32,7 +37,8 @@ User.init({
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      len: [8, 100]
+      len: [8, 100],
+      is: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
     }
   },
   isEmailVerified: {
@@ -62,16 +68,16 @@ User.init({
 }, {
   sequelize,
   modelName: 'User',
+  tableName: 'Users',
   timestamps: true
 });
 
 // 密码加密钩子
 User.beforeCreate(async (user) => {
-  if (user.changed('password')) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
-  }
-});
+  const hashedPassword = await bcrypt.hash(user.password, 10);
+  user.password = hashedPassword;
+  });
+
 
 User.beforeUpdate(async (user) => {
   if (user.changed('password')) {

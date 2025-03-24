@@ -16,44 +16,49 @@ const RegisterPage: React.FC = () => {
   const onFinish = async (values: any) => {
     setLoading(true);
     setError('');
-    
+
     try {
-      const response = await post('/auth/register', {
+      const response = await post<{success?: boolean, data?: {success?: boolean, message?: string, errorType?: string}, message?: string, errorType?: string}>('/auth/register', {
         username: values.username,
         email: values.email,
         password: values.password
       });
 
-      // 明确检查响应状态
-      if (!response.success) {
-        throw {
-          response: {
-            data: {
-              errorType: response.errorType,
-              message: response.message
-            }
-          }
-        };
+      // 检查响应中的成功标志
+      if (response && (response?.success || response?.data?.success)) {
+        setRegistered(true);
+        return;
       }
-      
-      setRegistered(true);
+
+      // 处理已知的错误类型
+      if (response?.data?.errorType === 'email_conflict' || response?.errorType === 'email_conflict') {
+        setError('该邮箱已注册，请直接登录或使用其他邮箱');
+      } else if (response?.data?.message) {
+        setError(response.data.message);
+      } else if (response?.message) {
+        setError(response.message);
+      } else {
+        setError('注册失败，请稍后再试');
+      }
+
     } catch (err: any) {
-      //console.error('Registration error:', err);
-      let errorMessage = '注册失败，请稍后重试';
-
-      // 确保处理409状态码
-      if (err.response?.status === 409 || err.response?.data?.errorType === 'email_conflict') {
-        errorMessage = '该邮箱已被注册，请使用其他邮箱或找回密码';
+      // 处理网络错误或服务器错误
+      if (!navigator.onLine) {
+        setError('网络连接已断开，请检查网络设置');
+      } else if (err.response?.status === 409) {
+        setError('该邮箱已注册，请直接登录或使用其他邮箱');
+      } else if (err.response?.status === 400) {
+        setError(err.response.data?.message || '注册信息格式有误，请检查后重试');
       } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
+        setError(err.response.data.message);
+      } else if (err.message === 'Network Error') {
+        setError('无法连接到服务器，请检查网络连接');
+      } else {
+        setError('注册失败，请稍后重试');
       }
-
-      setError(errorMessage);
+    } finally {
       setLoading(false);
-      return;
     }
-    
-    setLoading(false);
   };
 
   if (registered) {

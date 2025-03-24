@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import sequelize, { testConnection } from './config/database.js';
+import reportsRoutes from './routes/reports.js';
+import searchTermQuadrantRoutes from './routes/searchTermQuadrant.js';
 
 // 加载环境变量
 dotenv.config();
@@ -20,6 +22,8 @@ app.use(cors({
 
 // 路由
 app.use('/api/auth', authRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/search-terms', searchTermQuadrantRoutes);
 
 // 数据库连接测试
 testConnection()
@@ -29,17 +33,15 @@ testConnection()
       process.exit(1);
     }
     
-    // 导入模型
-    import('./models/User.js')
-      .then(async () => {
-        try {
-          // 同步数据库模型
-          await sequelize.sync({ alter: true });
-          console.log('数据库表同步成功');
-        } catch (error) {
-          console.error('数据库表同步失败:', error);
-        }
-      });
+    try {
+      // 安全同步所有模型
+      await sequelize.sync({ alter: true });
+      
+      console.log('数据库表同步成功');
+    } catch (error) {
+      console.error('数据库表同步失败:', error);
+      process.exit(1);
+    }
   });
 
 // 启动服务器

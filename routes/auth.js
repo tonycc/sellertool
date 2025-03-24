@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { Op } from 'sequelize';
 import User from '../models/User.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/emailService.js';
+import { generateToken } from '../utils/jwtService.js';
 
 const router = express.Router();
 
@@ -55,10 +56,23 @@ router.post('/register', async (req, res) => {
     // 发送验证邮件
     await sendVerificationEmail(email, emailVerificationToken);
 
-    // 注册成功响应也增加success字段
+    // 创建JWT令牌
+    const token = generateToken({
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email
+    });
+
+    // 注册成功响应
     res.status(200).json({ 
       success: true,
-      message: '注册成功，请查收验证邮件' 
+      message: '注册成功，请查收验证邮件',
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email
+      },
+      token
     });
   } catch (error) {
     console.error('注册错误:', error);
@@ -125,31 +139,64 @@ router.post('/login', async (req, res) => {
       where: { email }
     });
     if (!user) {
-      return res.status(401).json({ message: '邮箱或密码不正确' });
+      return res.status(401).json({
+        success: false,
+        errorType: 'email_not_found',
+        message: '该邮箱未注册',
+        field: 'email'
+      });
     }
 
     // 验证密码
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: '邮箱或密码不正确' });
+      return res.status(401).json({
+        success: false,
+        errorType: 'invalid_password',
+        message: '邮箱或密码不正确',
+        field: 'password'
+      });
     }
 
     // 检查邮箱是否已验证
     if (!user.isEmailVerified) {
-      return res.status(403).json({ message: '请先验证您的邮箱' });
+      console.log('403响应内容:', {
+        success: false,
+        errorType: 'email_not_verified',
+        silent: true,
+        message: '请先验证您的邮箱'
+      });
+      return res.status(403).json({
+        success: false,
+        errorType: 'email_not_verified',
+        silent: true,
+        message: '请先验证您的邮箱'
+      });
     }
 
-    // 创建用户会话或JWT令牌（这里简化处理，实际应用中应使用JWT或会话）
+    // 创建JWT令牌
+    const token = generateToken({
+      id: user.id,
+      username: user.username,
+      email: user.email
+    });
+
+    // 返回用户信息和令牌
     res.status(200).json({
+      success: true,
       message: '登录成功',
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email
-      }
+      },
+      token
     });
   } catch (error) {
-    console.error('登录错误:', error);
+    // 静默处理密码错误日志
+    if (error.response?.status !== 401) {
+      console.error('登录错误:', error);
+    }
     res.status(500).json({ message: '服务器错误，请稍后重试' });
   }
 });

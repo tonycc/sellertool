@@ -3,35 +3,34 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// 创建Sequelize实例
-const sequelize = new Sequelize({
-  dialect: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '111111',
-  database: process.env.DB_NAME || 'sellertool',
-  logging: process.env.ENABLE_SQL_LOGGING === 'true' ? console.log : false, // 根据环境变量控制日志输出
-  define: {
-    timestamps: true,
-    underscored: false
-  },
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    dialect: 'postgres',
+    logging: false,
+    define: {
+      freezeTableName: false,
+      underscored: false
+    },
+    dialectOptions: {
+      // PostgreSQL默认使用UTF-8，不需要指定charset和collate
+      // 移除MySQL特有的设置
+      useUTC: false,
+      timezone: '+08:00'
+    }
   }
-});
+);
 
-// 测试数据库连接
 export const testConnection = async () => {
   try {
     await sequelize.authenticate();
     console.log('PostgreSQL连接成功');
     return true;
   } catch (error) {
-    console.error('PostgreSQL连接失败:', error);
+    console.error('无法连接到数据库:', error);
     return false;
   }
 };

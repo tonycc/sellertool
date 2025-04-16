@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import path from 'path';
 import ReportFile from '../models/ReportFile.js';
 import SearchTermReport from '../models/SearchTermReport.js';
+import AdPlacementReport from '../models/AdPlacementReport.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -28,6 +29,25 @@ router.get('/list', authenticate, async (req, res) => {
     res.json({ reports: formattedReports });
   } catch (error) {
     console.error('获取报告列表失败:', error);
+    res.status(500).json({ message: '服务器内部错误' });
+  }
+});
+
+// 获取报告原始数据
+router.get('/raw-data/:id', authenticate, async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const report = await ReportFile.findOne({
+      where: { id: reportId, userId: req.user.id },
+      attributes: ['id', 'fileName', 'content']
+    });
+    if (!report) {
+      return res.status(404).json({ message: '报表不存在或已被删除' });
+    }
+    
+    res.json({ rawData: report.content });
+  } catch (error) {
+    console.error('获取报表原始数据失败:', error);
     res.status(500).json({ message: '服务器内部错误' });
   }
 });
@@ -175,99 +195,219 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
       content: records
     });
 
-    // 存储解析后的数据
-    const searchTermData = records.map(record => {
-      // 安全解析数值，避免NaN值
-      const safeParseInt = (value) => {
-        const parsed = parseInt(value, 10);
-        return isNaN(parsed) ? 0 : parsed;
-      };
-      
-      const safeParseFloat = (value) => {
-        const parsed = parseFloat(value);
-        return isNaN(parsed) ? 0 : parsed;
-      };
-
-      // 处理中英文字段名称映射
-      const getField = (names, defaultValue = '') => {
-        // 扩展字段别名映射
-        const fieldAliases = {
-          '总订单数': ['Total Orders', 'Orders', '订单总数', '7天总订单数(#)'],
-          '总销售量': ['Total Units', 'Units Sold', 'Units', '总销售量' , '7天总销售量(#)']
+    // 根据报表类型处理数据
+    if (req.body.reportType === 'AD_PLACEMENT_REPORT') {
+      // 处理广告位广告报表数据
+      const adPlacementData = records.map(record => {
+        // 安全解析数值，避免NaN值
+        const safeParseInt = (value) => {
+          const parsed = parseInt(value, 10);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        
+        const safeParseFloat = (value) => {
+          const parsed = parseFloat(value);
+          return isNaN(parsed) ? 0 : parsed;
         };
 
-        // 优先处理字段别名
-        const allNames = names.reduce((acc, name) => {
-          const aliases = fieldAliases[name] || [];
-          return acc.concat(name, ...aliases);
-        }, []);
+        // 处理中英文字段名称映射
+        const getField = (names, defaultValue = '') => {
+          // 扩展字段别名映射
+          const fieldAliases = {
+            '总订单数': ['Total Orders', 'Orders', '订单总数', '7天总订单数(#)'],
+            '总销售量': ['Total Units', 'Units Sold', 'Units', '总销售量', '7天总销售量(#)']
+          };
 
-        // 查找第一个有效字段
-        const validName = allNames.find(name => record[name] !== undefined && record[name] !== '');
+          // 优先处理字段别名
+          const allNames = names.reduce((acc, name) => {
+            const aliases = fieldAliases[name] || [];
+            return acc.concat(name, ...aliases);
+          }, []);
+
+          // 查找第一个有效字段
+          const validName = allNames.find(name => record[name] !== undefined && record[name] !== '');
+          
+          // 数值字段特殊处理：空值时返回默认值
+          return validName ? record[validName] : defaultValue;
+        };
         
-        // 数值字段特殊处理：空值时返回默认值
-        return validName ? record[validName] : defaultValue;
-      };
-      
-      // 从记录中解析日期
-const recordDate = record['Date'] || record['日期'] || record['Report Date'];
-let parsedRecordDate = null;
-if (recordDate) {
-  try {
-    parsedRecordDate = new Date(recordDate);
-    if (isNaN(parsedRecordDate.getTime())) parsedRecordDate = null;
-  } catch (e) {
-    console.log(`无法解析日期字段: ${recordDate}`);
-  }
-}
+        // 从记录中解析日期
+        const recordDate = record['Date'] || record['日期'] || record['Report Date'];
+        let parsedRecordDate = null;
+        if (recordDate) {
+          try {
+            parsedRecordDate = new Date(recordDate);
+            if (isNaN(parsedRecordDate.getTime())) parsedRecordDate = null;
+          } catch (e) {
+            console.log(`无法解析日期字段: ${recordDate}`);
+          }
+        }
 
-return {
-  reportFileId: reportFile.id,
-  date: parsedRecordDate || startDate,
-  campaignName: getField(['Campaign Name', '广告活动名称'], '未知活动'),
-  adPortfolioName: getField(['Portfolio Name', '广告组合名称'], '默认广告组合'),
-  adGroupName: getField(['Ad Group Name', '广告组名称'], ''),
-  targeting: getField(['targeting', '投放'], ''),
-  matchType: getField(['Match Type', '匹配类型'], 'exact'),
-  customerSearchTerm: getField(['Customer Search Term', '客户搜索词'], '未知搜索词'),
-  Currency: getField(['Currency', '货币'], 'USD'),
-  
-  // 数值字段
-  impressions: safeParseInt(record['Impressions'] || record['展示量']),
-  clicks: safeParseInt(record['Clicks'] || record['点击量']),
-  ctr: safeParseFloat(record['CTR'] || record['点击率(CTR)']),
-  cpc: safeParseFloat(record['CPC'] || record['每次点击成本(CPC)']),
-  spend: safeParseFloat(record['Spend'] || record['花费']),
-  sales: safeParseFloat(record['Sales'] || record['7天总销售额']),
-  acos: safeParseFloat(record['ACOS'] || record['广告成本销售比(ACOS)']),
-  roas: safeParseFloat(record['ROAS'] || record['投入产出比(ROAS)']),
-  orders: safeParseInt(getField(['Orders', '总订单数'], 0)),
-  unitsSold: safeParseInt(getField(['Units Sold', '总销售量', '总销量'], 0)),
-  conversionRate: safeParseFloat(record['Conversion Rate'] || record['7天的转化率'])
-};
-    });
+        // 解析开始日期和结束日期
+        let startDate = null;
+        let endDate = null;
+        
+        const startDateField = record['Start Date'] || record['开始日期'];
+        const endDateField = record['End Date'] || record['结束日期'];
+        
+        if (startDateField) {
+          try {
+            startDate = new Date(startDateField);
+            if (isNaN(startDate.getTime())) startDate = null;
+          } catch (e) {
+            console.log(`无法解析开始日期字段: ${startDateField}`);
+          }
+        }
+        
+        if (endDateField) {
+          try {
+            endDate = new Date(endDateField);
+            if (isNaN(endDate.getTime())) endDate = null;
+          } catch (e) {
+            console.log(`无法解析结束日期字段: ${endDateField}`);
+          }
+        }
 
-    // 添加数据验证日志
-    //console.log(`处理了 ${searchTermData.length} 条记录`);
-    
-    // 检查是否有数据
-    if (searchTermData.length === 0) {
-      throw new Error('没有有效的数据记录');
-    }
-    
-    try {
-      await SearchTermReport.bulkCreate(searchTermData);
-      
-      res.status(200).json({
-        success: true,
-        message: '报告上传成功',
-        reportId: reportFile.id
+        return {
+          reportFileId: reportFile.id,
+          date: parsedRecordDate || startDate,
+          startDate: startDate,
+          endDate: endDate,
+          campaignName: getField(['Campaign Name', '广告活动名称'], '未知活动'),
+          adPortfolioName: getField(['Portfolio Name', '广告组合名称'], '默认广告组合'),
+          retailer: getField(['Retailer', '零售商'], ''),
+          region: getField(['Region', '国家/地区'], ''),
+          biddingStrategy: getField(['Bidding Strategy', '竞价策略'], ''),
+          placement: getField(['Placement', '广告位', '放置'], '未知广告位'),
+          Currency: getField(['Currency', '货币'], 'USD'),
+          
+          // 数值字段
+          impressions: safeParseInt(record['Impressions'] || record['展示量']),
+          clicks: safeParseInt(record['Clicks'] || record['点击量']),
+          cpc: safeParseFloat(record['CPC'] || record['每次点击成本(CPC)']),
+          spend: safeParseFloat(record['Spend'] || record['花费']),
+          sales: safeParseFloat(record['Sales'] || record['7天总销售额']),
+          acos: safeParseFloat(record['ACOS'] || record['广告投入产出比 (ACOS) 总计']),
+          roas: safeParseFloat(record['ROAS'] || record['总广告投资回报率 (ROAS)']),
+          orders: safeParseInt(getField(['Orders', '总订单数', '7天总订单数(#)'], 0)),
+          unitsSold: safeParseInt(getField(['Units Sold', '总销售量', '总销量', '7天总销售量(#)'], 0))
+        };
       });
-    } catch (dbError) {
-      console.error('数据库插入错误:', dbError);
-      // 删除已创建的报告文件记录
-      await ReportFile.destroy({ where: { id: reportFile.id } });
-      throw new Error(`数据库插入失败: ${dbError.message}`);
+
+      // 检查是否有数据
+      if (adPlacementData.length === 0) {
+        throw new Error('没有有效的数据记录');
+      }
+      
+      try {
+        await AdPlacementReport.bulkCreate(adPlacementData);
+        
+        res.status(200).json({
+          success: true,
+          message: '广告位报告上传成功',
+          reportId: reportFile.id
+        });
+      } catch (dbError) {
+        console.error('数据库插入错误:', dbError);
+        // 删除已创建的报告文件记录
+        await ReportFile.destroy({ where: { id: reportFile.id } });
+        throw new Error(`数据库插入失败: ${dbError.message}`);
+      }
+    } else {
+      // 处理搜索词报告数据（原有逻辑）
+      const searchTermData = records.map(record => {
+        // 安全解析数值，避免NaN值
+        const safeParseInt = (value) => {
+          const parsed = parseInt(value, 10);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        
+        const safeParseFloat = (value) => {
+          const parsed = parseFloat(value);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+
+        // 处理中英文字段名称映射
+        const getField = (names, defaultValue = '') => {
+          // 扩展字段别名映射
+          const fieldAliases = {
+            '总订单数': ['Total Orders', 'Orders', '订单总数', '7天总订单数(#)'],
+            '总销售量': ['Total Units', 'Units Sold', 'Units', '总销售量' , '7天总销售量(#)']
+          };
+
+          // 优先处理字段别名
+          const allNames = names.reduce((acc, name) => {
+            const aliases = fieldAliases[name] || [];
+            return acc.concat(name, ...aliases);
+          }, []);
+
+          // 查找第一个有效字段
+          const validName = allNames.find(name => record[name] !== undefined && record[name] !== '');
+          
+          // 数值字段特殊处理：空值时返回默认值
+          return validName ? record[validName] : defaultValue;
+        };
+        
+        // 从记录中解析日期
+        const recordDate = record['Date'] || record['日期'] || record['Report Date'];
+        let parsedRecordDate = null;
+        if (recordDate) {
+          try {
+            parsedRecordDate = new Date(recordDate);
+            if (isNaN(parsedRecordDate.getTime())) parsedRecordDate = null;
+          } catch (e) {
+            console.log(`无法解析日期字段: ${recordDate}`);
+          }
+        }
+
+        return {
+          reportFileId: reportFile.id,
+          date: parsedRecordDate || startDate,
+          campaignName: getField(['Campaign Name', '广告活动名称'], '未知活动'),
+          adPortfolioName: getField(['Portfolio Name', '广告组合名称'], '默认广告组合'),
+          adGroupName: getField(['Ad Group Name', '广告组名称'], ''),
+          targeting: getField(['targeting', '投放'], ''),
+          matchType: getField(['Match Type', '匹配类型'], 'exact'),
+          customerSearchTerm: getField(['Customer Search Term', '客户搜索词'], '未知搜索词'),
+          Currency: getField(['Currency', '货币'], 'USD'),
+          
+          // 数值字段
+          impressions: safeParseInt(record['Impressions'] || record['展示量']),
+          clicks: safeParseInt(record['Clicks'] || record['点击量']),
+          ctr: safeParseFloat(record['CTR'] || record['点击率(CTR)']),
+          cpc: safeParseFloat(record['CPC'] || record['每次点击成本(CPC)']),
+          spend: safeParseFloat(record['Spend'] || record['花费']),
+          sales: safeParseFloat(record['Sales'] || record['7天总销售额']),
+          acos: safeParseFloat(record['ACOS'] || record['广告成本销售比(ACOS)']),
+          roas: safeParseFloat(record['ROAS'] || record['投入产出比(ROAS)']),
+          orders: safeParseInt(getField(['Orders', '总订单数'], 0)),
+          unitsSold: safeParseInt(getField(['Units Sold', '总销售量', '总销量'], 0)),
+          conversionRate: safeParseFloat(record['Conversion Rate'] || record['7天的转化率'])
+        };
+      });
+
+      // 添加数据验证日志
+      //console.log(`处理了 ${searchTermData.length} 条记录`);
+      
+      // 检查是否有数据
+      if (searchTermData.length === 0) {
+        throw new Error('没有有效的数据记录');
+      }
+      
+      try {
+        await SearchTermReport.bulkCreate(searchTermData);
+        
+        res.status(200).json({
+          success: true,
+          message: '报告上传成功',
+          reportId: reportFile.id
+        });
+      } catch (dbError) {
+        console.error('数据库插入错误:', dbError);
+        // 删除已创建的报告文件记录
+        await ReportFile.destroy({ where: { id: reportFile.id } });
+        throw new Error(`数据库插入失败: ${dbError.message}`);
+      }
     }
   } catch (error) {
     console.error('报告上传失败:', error);
@@ -290,85 +430,7 @@ return {
   }
 });
 
-// 获取报告详情
-/*router.get('/detail/:id', authenticate, async (req, res) => {
-  try {
-    const reportId = req.params.id;
-    
-    // 获取报告文件信息
-    const report = await ReportFile.findOne({
-      where: { 
-        id: reportId,
-        userId: req.user.id 
-      },
-      attributes: ['id', 'fileName', 'reportCategory', 'reportType', 'reportDateRange', 'createdAt']
-    });
-    
-    if (!report) {
-      return res.status(404).json({ message: '报告不存在' });
-    }
-    
-    // 获取搜索词报告数据
-    const searchTerms = await SearchTermReport.findAll({
-      where: { reportFileId: reportId },
-      attributes: [
-        'id', 'campaignName', 'customerSearchTerm', 'targeting', 'matchType',
-        'impressions', 'clicks', 'spend', 'sales', 'orders', 'acos','roas',
-      ]
-    });
-    
-    // 计算汇总数据
-    const summary = searchTerms.reduce((acc, term) => {
-      acc.totalImpressions += term.impressions;
-      acc.totalClicks += term.clicks;
-      acc.totalSpend += term.spend;
-      acc.totalSales += term.sales;
-      acc.totalOrders += term.orders;
-      return acc;
-    }, {
-      totalImpressions: 0,
-      totalClicks: 0,
-      totalSpend: 0,
-      totalSales: 0,
-      totalOrders: 0
-    });
-    
-    // 计算派生指标
-    summary.ctr = summary.totalImpressions > 0 
-      ? ((summary.totalClicks / summary.totalImpressions) * 100).toFixed(2) + '%'
-      : '0.00%';
-      
-    summary.acos = summary.totalSales > 0
-      ? ((summary.totalSpend / summary.totalSales) * 100).toFixed(2) + '%'
-      : '0.00%';
-      
-    summary.conversionRate = summary.totalClicks > 0
-      ? ((summary.totalOrders / summary.totalClicks) * 100).toFixed(2) + '%'
-      : '0.00%';
-      
-    summary.cpc = summary.totalClicks > 0
-      ? (summary.totalSpend / summary.totalClicks).toFixed(2)
-      : '0.00';
-    
-    // 格式化报告信息
-    const reportInfo = {
-      id: report.id,
-      fileName: report.fileName,
-      fileType: report.reportType,
-      reportDateRange: report.reportDateRange || '未知日期',
-      uploadedAt: report.createdAt
-    };
-    
-    res.json({
-      report: reportInfo,
-      searchTerms,
-      summary
-    });
-  } catch (error) {
-    console.error('获取报告详情失败:', error);
-    res.status(500).json({ message: '服务器内部错误' });
-  }
-});*/
+
 
 // 获取按广告活动汇总的报告数据
 router.get('/campaign-summary/:id', authenticate, async (req, res) => {

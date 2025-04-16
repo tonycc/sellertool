@@ -17,6 +17,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ element, requireAuth = true
   useEffect(() => {
     if (requireAuth && !isAuthenticated) {
       setShowLoginModal(true);
+    } else {
+      setShowLoginModal(false);
     }
   }, [requireAuth, isAuthenticated]);
 

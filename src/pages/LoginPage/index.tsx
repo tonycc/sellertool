@@ -40,8 +40,10 @@ const LoginPage: React.FC = () => {
         password: values.password
       });
       
-      // 登录成功后保存用户信息并跳转到原来的页面
-      login(data.user, data.token);
+      // 登录成功后保存用户信息并跳转到操作中台页面
+      // 设置isActive为true表示这是用户主动登录
+      login(data.user, data.token, true);
+      // 使用from路径进行重定向，确保用户被引导到原本想访问的页面
       navigate(from, { replace: true });
     } catch (err: any) {
       // 统一错误处理逻辑

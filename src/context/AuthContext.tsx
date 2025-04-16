@@ -17,13 +17,15 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (userData: User, token?: string) => void;
+  isActiveLogin: boolean; // 标记是否是主动登录
+  login: (userData: User, token?: string, isActive?: boolean) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
+  isActiveLogin: false,
   login: () => {},
   logout: () => {}
 });
@@ -37,6 +39,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isActiveLogin, setIsActiveLogin] = useState<boolean>(false);
 
   // 验证JWT令牌是否有效
   const validateToken = (token: string): JwtPayload | null => {
@@ -60,6 +63,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 从localStorage加载token和用户信息
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
+    const storedActiveLogin = localStorage.getItem('isActiveLogin');
+    
+    // 读取主动登录状态
+    if (storedActiveLogin) {
+      setIsActiveLogin(storedActiveLogin === 'true');
+    }
     
     if (token) {
       // 验证token有效性
@@ -82,6 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Token无效，清除存储的认证信息
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('isActiveLogin');
       }
     } else if (storedUser) {
       // 没有token但有用户信息，尝试使用用户信息
@@ -92,11 +102,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('Failed to parse user data:', error);
         localStorage.removeItem('user');
+        localStorage.removeItem('isActiveLogin');
       }
     }
   }, []);
 
-  const login = (userData: User, token?: string) => {
+  const login = (userData: User, token?: string, isActive: boolean = false) => {
+    // 设置主动登录状态
+    setIsActiveLogin(isActive);
+    
     // 如果提供了token，则解析它并使用token中的用户信息
     if (token) {
       const decodedToken = validateToken(token);
@@ -113,30 +127,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(tokenUser));
         localStorage.setItem('token', token);
+        // 保存主动登录状态
+        localStorage.setItem('isActiveLogin', String(isActive));
       } else {
         // Token无效，使用提供的用户数据
         console.warn('Provided token is invalid, using provided user data instead');
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
+        // 保存主动登录状态
+        localStorage.setItem('isActiveLogin', String(isActive));
       }
     } else {
       // 没有提供token，使用提供的用户数据
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));
+      // 保存主动登录状态
+      localStorage.setItem('isActiveLogin', String(isActive));
     }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    setIsActiveLogin(false);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('isActiveLogin');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isActiveLogin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

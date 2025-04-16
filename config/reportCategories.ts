@@ -19,6 +19,10 @@ const reportCategories = [
       {
         value: 'TARGETING_REPORT',
         label: '按时间查看效果'
+      },
+      {
+        value: 'AD_PLACEMENT_REPORT',
+        label: '广告位报告'
       }
     ]
   },
@@ -33,7 +37,8 @@ const reportCategories = [
       {
         value: 'CAMPAIGN_REPORT',
         label: '广告活动'
-      }
+      },
+     
     ]
   },
 ];

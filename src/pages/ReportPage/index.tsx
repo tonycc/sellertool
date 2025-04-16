@@ -1,46 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Upload, Button, Card, Table, message, Spin, Empty, Cascader, Layout, Modal, Select } from 'antd';
-import { InboxOutlined, FileTextOutlined, BarChartOutlined, SearchOutlined } from '@ant-design/icons';
+import { Upload, Button, message, Empty } from 'antd';
+import { InboxOutlined, FileTextOutlined, BarChartOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { ProTable, ModalForm, ProFormCascader } from '@ant-design/pro-components';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import reportCategories from '../../../config/reportCategories';
+import MainLayout from '../../components/layout/MainLayout';
 import './style.css';
 
 const { Dragger } = Upload;
-const { Content } = Layout;
-
-import { ColumnType } from 'antd/es/table';
 
 interface ReportFile {
   id: string;
   fileName: string;
   reportCategory: string;
   reportType: string;
-  reportDateRange?: string; // 新增报告日期区间字段
+  reportDateRange?: string;
   uploadedAt: string;
-  createdAt?: string; // 可选字段，后端可能返回
+  createdAt?: string;
 }
 
-const ReportPage: React.FC = () => {
+const ReportPageWithLayout: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const actionRef = useRef<ActionType>();
   const [reports, setReports] = useState<ReportFile[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedReportCategory, setSelectedReportCategory] = useState<string>('');
-  const [selectedReportType, setSelectedReportType] = useState<string>('');
-  const [filteredReports, setFilteredReports] = useState<ReportFile[]>([]);
   const [uploadModalVisible, setUploadModalVisible] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
-
-
-
-  const data = [
-    { campaignName: '活动1', spend: 100, sales: 200 },
-    { campaignName: '活动2', spend: 150, sales: 300 },
-    { campaignName: '活动3', spend: 200, sales: 400 },
-  ];
- 
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -48,53 +37,27 @@ const ReportPage: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    setFilteredReports(reports);
-  }, [reports]);
-
   const fetchReports = async () => {
     setLoading(true);
     try {
       const response = await apiClient.get('/api/reports/list'); 
-      // 检查返回的数据是否为空或未定义
       if (!response.data || !response.data.reports) {
         setReports([]);
-        setFilteredReports([]);
         return;
       }
-      // 对报告按上传时间倒序排序
       const sortedReports = [...response.data.reports].sort((a, b) => 
         new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
       );
       setReports(sortedReports);
-      setFilteredReports(sortedReports);
     } catch (error: any) {
-      // 根据错误类型静默处理
       if (error.errorType === 'not_found') {
         setReports([]);
-        setFilteredReports([]);
       } else {
         setReports([]);
-        setFilteredReports([]);
       }
     } finally {
       setLoading(false);
     }
-  };
-
-
-
-  const filterReports = (category: string, type: string) => {
-    const filtered = reports.filter(report => {
-      const matchCategory = category ? report.reportCategory === category : true;
-      const matchType = type ? report.reportType === type : true;
-      return matchCategory && matchType;
-    });
-    // 确保过滤后的报告仍然按上传时间倒序排序
-    const sortedFiltered = [...filtered].sort((a, b) => 
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-    );
-    setFilteredReports(sortedFiltered);
   };
 
   const showUploadModal = () => {
@@ -104,20 +67,18 @@ const ReportPage: React.FC = () => {
   const handleUploadModalCancel = () => {
     setUploadModalVisible(false);
     setSelectedCategory([]);
-    setSelectedReportCategory('');
-    setSelectedReportType('');
   };
 
   const uploadProps = {
     name: 'file',
     multiple: false,
-    action: `${apiClient.defaults.baseURL}/api/reports/upload`, // 路径已包含/api前缀，不需要重复添加
+    action: `${apiClient.defaults.baseURL}/api/reports/upload`,
     accept: '.csv,.xlsx,.xls',
     showUploadList: false,
     data: (file: any) => ({
       reportCategory: selectedCategory[0] || '',
       reportType: selectedCategory[1] || '',
-      fileName: encodeURIComponent(file.name || '') // 安全处理文件名
+      fileName: encodeURIComponent(file.name || '')
     }),
     beforeUpload: (file: File) => {
       const isValidType = file.type === 'text/csv' || 
@@ -147,6 +108,7 @@ const ReportPage: React.FC = () => {
         message.success(`${info.file.name} 上传成功`);
         handleUploadModalCancel();
         fetchReports();
+        actionRef.current?.reload();
       } else if (info.file.status === 'error') {
         setLoading(false);
         const errorMessage = info.file.response?.message || '上传失败';
@@ -158,151 +120,173 @@ const ReportPage: React.FC = () => {
     }
   };
 
-  const columns: ColumnType<ReportFile>[] = [
+  const handleViewReport = (reportId: string) => {
+    const report = reports.find(r => r.id === reportId);
+    
+    if (report) {
+      if (report.reportType === 'AD_PLACEMENT_REPORT') {
+        navigate(`/report/ad-placement/${reportId}`);
+      } else if (report.reportType === 'SEARCH_TERM_REPORT')  {
+        navigate(`/report/st-detail/${reportId}`);
+      }
+    } else {
+      navigate(`/report/st-detail/${reportId}`);
+    }
+  };
+
+  // 处理查看原始数据
+  const handleViewRawData = (reportId: string) => {
+    // 根据报表ID跳转到原始数据页面
+    // 这里假设所有报表类型都使用同一个原始数据查看路径
+    navigate(`/report/raw-data/${reportId}`);
+  };
+
+  // 定义ProTable的列
+  const columns: ProColumns<ReportFile>[] = [
     {
       title: '报表名称',
       dataIndex: 'fileName',
-      key: 'fileName',
-      render: (text: string) => (
-        <span>
-          <FileTextOutlined style={{ marginRight: 8 }} />
-          {text}
-        </span>
-      )
+      width: '25%',
+      valueType: 'text',
+      fieldProps: {
+        prefix: <FileTextOutlined />
+      },
+      ellipsis: {
+        showTitle: true
+      },
     },
     {
       title: '报表类别',
       dataIndex: 'reportCategory',
-      key: 'reportCategory',
-      render: (text: string) => {
-        const categoryMap: Record<string, string> = {
-          'advertising': '广告报告',
-          'sales': '销售报告',
-          'performance': '绩效报告'
-        };
-        return categoryMap[text] || text;
+      valueEnum: {
+        'sp': { text: '商品推广' },
+        'sb': { text: '品牌推广' },
+        'sd': { text: '展示型推广' }
+      },
+      filters: true,
+      filterMultiple: true,
+      valueType: 'text',
+      fieldProps: {
+        options: reportCategories.map(cat => ({ value: cat.value, label: cat.label }))
       }
     },
     {
       title: '报表类型',
       dataIndex: 'reportType',
-      key: 'reportType',
-      render: (text: string) => {
-        const typeMap: Record<string, string> = {
-          'SEARCH_TERM_REPORT': '搜索词报告',
-          'CAMPAIGN_REPORT': '广告活动报告',
-          'TARGETING_REPORT': '定向报告',
-          'BUSINESS_REPORT': '业务报告',
-          'INVENTORY_REPORT': '库存报告',
-          'PERFORMANCE_REPORT': '绩效概览报告',
-          'TRAFFIC_REPORT': '流量报告'
-        };
-        return typeMap[text] || text;
+      valueEnum: {
+        'SEARCH_TERM_REPORT': { text: '搜索词报告' },
+        'CAMPAIGN_REPORT': { text: '广告活动报告' },
+        'TARGETING_REPORT': { text: '定向报告' },
+        'BUSINESS_REPORT': { text: '业务报告' },
+        'INVENTORY_REPORT': { text: '库存报告' },
+        'PERFORMANCE_REPORT': { text: '绩效概览报告' },
+        'TRAFFIC_REPORT': { text: '流量报告' },
+        'AD_PLACEMENT_REPORT': { text: '广告位报告' },
+      },
+      filters: true,
+      filterMultiple: false,
+      valueType: 'text',
+      fieldProps: {
+        options: reportCategories.flatMap(cat => 
+          cat.children?.map(type => ({ value: type.value, label: type.label })) || []
+        )
       }
     },
     {
       title: '日期区间',
       dataIndex: 'reportDateRange',
-      key: 'reportDateRange',
-      render: (text: string) => text || '未知日期'
+      width: '20%',
+      valueType: 'text',
+      ellipsis: {
+        showTitle: true
+      },
     },
     {
       title: '上传时间',
       dataIndex: 'uploadedAt',
-      key: 'uploadedAt',
-      render: (text: string) => new Date(text).toLocaleString('zh-CN'),
-      sorter: (a: ReportFile, b: ReportFile) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
-      defaultSortOrder: 'descend' as 'descend'
+      width: '18%',
+      valueType: 'dateTime',
+      sorter: true,
+      defaultSortOrder: 'descend',
     },
     {
       title: '操作',
-      key: 'action',
-      render: (_: any, record: ReportFile) => (
+      valueType: 'option',
+      render: (_, record) => [
         <Button 
+        key="rawData"
+        type="link" 
+        icon={<FileSearchOutlined />}
+        onClick={() => handleViewRawData(record.id)}
+        >
+        原始数据
+        </Button>,
+        <Button 
+          key="view"
           type="link" 
           icon={<BarChartOutlined />}
           onClick={() => handleViewReport(record.id)}
         >
           查看分析
-        </Button>
-      )
-    }
+        </Button>,
+       
+      ],
+    },
   ];
-
-  const handleViewReport = (reportId: string) => {
-    // 使用navigate函数替代window.location.href
-    navigate(`/report/detail/${reportId}`);
-  };
-
-
-
   return (
-    <Layout className="report-page">
-     
-      <Content className="report-content">
-        <Card className="reports-card">
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-                <Col>
-                  <Row gutter={[16, 8]} align="middle">
-                    <Col flex="none">
-                      <Select
-                        placeholder="选择报告类别"
-                        style={{ width: 180 }}
-                        value={selectedReportCategory}
-                        onChange={(value) => setSelectedReportCategory(value)}
-                        options={reportCategories.map(cat => ({ value: cat.value, label: cat.label }))}
-                      />
-                    </Col>
-                    <Col flex="none">
-                      <Select
-                        placeholder="选择报告类型"
-                        style={{ width: 180 }}
-                        value={selectedReportType}
-                        onChange={(value) => setSelectedReportType(value)}
-                        options={selectedReportCategory 
-                          ? reportCategories
-                              .find(cat => cat.value === selectedReportCategory)?.children || []
-                          : []}
-                        notFoundContent={!selectedReportCategory ? "请先选择报告类别" : "无可用报告类型"}
-                        disabled={!selectedReportCategory}
-                        allowClear
-                        popupMatchSelectWidth={true}
-                        showSearch={false}
-                      />
-                    </Col>
-                    <Col flex="none">
-                      <Button 
-                        type="primary" 
-                        icon={<SearchOutlined />}
-                        onClick={() => filterReports(selectedReportCategory, selectedReportType)}
-                      >
-                        查询
-                      </Button>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col>
-                  <Button type="primary" icon={<InboxOutlined />} onClick={showUploadModal}>
-                    上传报表
-                  </Button>
-                </Col>
-              </Row>
-            </Col>
-            <Col span={24}>
-              {loading ? (
-                <div className="loading-container">
-                  <Spin size="large" />
-                </div>
-              ) : filteredReports.length > 0 ? (
-                <Table 
-                  dataSource={filteredReports} 
-                  columns={columns} 
-                  rowKey="id"
-                  pagination={{ pageSize: 10 }}
-                />
-              ) : (
+    <MainLayout title="" subTitle="查看和管理您的所有报表">
+          <ProTable<ReportFile>
+            headerTitle="报表列表"
+            actionRef={actionRef}
+            rowKey="id"
+            search={false}
+            options={{
+              density: false,
+              fullScreen: false,
+              reload: false,
+              setting: true,
+            }}
+            cardProps={{
+              bodyStyle: { padding: '0px', margin: 0,},
+              style: { padding:0,margin:0,},
+            }}
+            toolBarRender={() => [
+              <Button 
+                key="upload" 
+                type="primary" 
+                icon={<InboxOutlined />} 
+                onClick={showUploadModal}
+              >
+                上传报表
+              </Button>,
+            ]}
+            dataSource={reports}
+            columns={columns}
+            loading={loading}
+            onChange={(_, _filter, sorter) => {
+              // 处理排序逻辑
+              if (sorter && typeof sorter === 'object' && !Array.isArray(sorter)) {
+                const { field, order } = sorter;
+                const sortedData = [...reports];
+                if (field === 'uploadedAt') {
+                  sortedData.sort((a, b) => {
+                    const aTime = new Date(a.uploadedAt || a.createdAt || '').getTime();
+                    const bTime = new Date(b.uploadedAt || b.createdAt || '').getTime();
+                    return order === 'ascend' ? aTime - bTime : bTime - aTime;
+                  });
+                  setReports(sortedData);
+                }
+              }
+            }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+            }}
+            dateFormatter="string"
+           
+            locale={{
+              emptyText: (
                 <Empty 
                   description={
                     <span>
@@ -315,41 +299,50 @@ const ReportPage: React.FC = () => {
                   }
                   image={Empty.PRESENTED_IMAGE_SIMPLE} 
                 />
-              )}
-            </Col>
-          </Row>
-        </Card>
+              )
+            }}
+          />
+       
 
-        <Modal
+        <ModalForm
           title="上传报表"
           open={uploadModalVisible}
-          onCancel={handleUploadModalCancel}
-          footer={null}
-          width={520}
+          onOpenChange={setUploadModalVisible}
+          submitter={false}
+          modalProps={{
+            destroyOnClose: true,
+            onCancel: handleUploadModalCancel,
+            width: 520,
+          }}
         >
-          <div style={{ marginBottom: 16 }}>
-            <Cascader
-              options={reportCategories}
-              placeholder="请选择报告分类"
-              value={selectedCategory}
-              onChange={(value) => setSelectedCategory(value as string[])}
-              expandTrigger="hover"
-              style={{ width: '100%' }}
-            />
+          <ProFormCascader
+            name="reportCategory"
+            label="报告分类"
+            placeholder="请选择报告分类"
+            fieldProps={{
+              options: reportCategories,
+              expandTrigger: 'hover',
+              value: selectedCategory,
+              onChange: (value) => setSelectedCategory(value as string[]),
+              style: { width: '100%' },
+            }}
+            rules={[{ required: true, message: '请选择报告分类' }]}
+          />
+          
+          <div style={{ marginTop: 16 }}>
+            <Dragger {...uploadProps} className="report-uploader">
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+              <p className="ant-upload-hint">
+                支持Excel和CSV格式的报表文件上传，请确保文件格式正确
+              </p>
+            </Dragger>
           </div>
-          <Dragger {...uploadProps} className="report-uploader">
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-            <p className="ant-upload-hint">
-              支持Excel和CSV格式的报表文件上传，请确保文件格式正确
-            </p>
-          </Dragger>
-        </Modal>
-      </Content>
-    </Layout>
+        </ModalForm>
+    </MainLayout>
   );
 };
 
-export default ReportPage;
+export default ReportPageWithLayout;

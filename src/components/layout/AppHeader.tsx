@@ -1,50 +1,20 @@
 import React from 'react'
-import { Layout, Menu, Dropdown, Avatar, Button, Badge, Tooltip, Space } from 'antd'
-import { Link, useNavigate } from 'react-router-dom'
-import { UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined } from '@ant-design/icons'
+import { Layout, Menu, Button, Space } from 'antd'
+import { Link } from 'react-router-dom'
+import { UserOutlined } from '@ant-design/icons'
 import { useAuth } from '../../context/AuthContext'
 import './AppHeader.css'
 
 const { Header } = Layout
 
 const AppHeader: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth()
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
-  const userMenu = [
-    {
-      key: 'profile',
-      label: <Link to="/profile">个人中心</Link>,
-      icon: <UserOutlined style={{ color: '#1890ff' }} />
-    },
-    {
-      key: 'settings',
-      label: <Link to="/settings">账户设置</Link>,
-      icon: <SettingOutlined style={{ color: '#52c41a' }} />
-    },
-    {
-      key: 'divider',
-      type: 'divider'
-    },
-    {
-      key: 'logout',
-      label: <span onClick={handleLogout}>退出登录</span>,
-      icon: <LogoutOutlined style={{ color: '#ff4d4f' }} />
-    }
-  ]
-
+  const { isAuthenticated } = useAuth()
   return (
     <Header className="app-header">
       <div className="container header-container">
         <div className="logo">
           <Link to="/">SellerTool</Link>
-        </div>
-        
+        </div>  
         <Menu 
           mode="horizontal" 
           className="main-menu"
@@ -53,10 +23,7 @@ const AppHeader: React.FC = () => {
               key: 'home',
               label: <Link to="/">首页</Link>,
             },
-            {
-              key: 'reports',
-              label: <Link to="/reports">报告分析</Link>,
-            },
+
             {
               key: 'about',
               label: <Link to="/about">关于</Link>,
@@ -66,8 +33,7 @@ const AppHeader: React.FC = () => {
               label: <Link to="/contact">联系我们</Link>,
             }
           ]}
-        />
-        
+        />        
         <div className="header-right">
           {!isAuthenticated ? (
             <Space>
@@ -79,16 +45,16 @@ const AppHeader: React.FC = () => {
               </Button>
             </Space>
           ) : (
-            <Dropdown 
-              menu={{ items: userMenu }} 
-              placement="bottomRight"
-              arrow
+            <Button 
+              type="primary" 
+              className="user-dropdown-btn"
+              icon={<UserOutlined />}
+              size="middle"
             >
-              <Button type="text" className="user-dropdown-btn">
-                <Avatar size="small" icon={<UserOutlined />} />
-                <span className="username">{user?.username}</span>
-              </Button>
-            </Dropdown>
+              <Link to="/dashboard" style={{ color: '#fff' }}>
+                进入操作中心
+              </Link>
+            </Button>
           )}
         </div>
       </div>

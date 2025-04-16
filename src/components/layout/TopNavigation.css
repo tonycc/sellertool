@@ -1,0 +1,53 @@
+.top-navigation {
+  background-color: #fff;
+
+  padding: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1001;
+  height: 38px;
+  line-height: 38px;
+}
+
+.top-navigation-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.top-navigation-left {
+  display: flex;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.top-navigation-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown {
+  cursor: pointer;
+  padding: 0 8px;
+  transition: all 0.3s;
+}
+
+.user-dropdown:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.username {
+  margin: 0 8px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

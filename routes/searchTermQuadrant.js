@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
 import ReportFile from '../models/ReportFile.js';
 import SearchTermReport from '../models/SearchTermReport.js';
+import { Op } from 'sequelize';
 
 const router = express.Router();
 
@@ -140,6 +141,236 @@ router.get('/quadrant-analysis/:id', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('获取搜索词四象限分析失败:', error);
+    res.status(500).json({ message: '服务器内部错误' });
+  }
+});
+
+// 获取搜索词与广告组映射关系数据
+router.get('/keyword-campaign-mapping/:id', authenticate, async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    
+    // 获取报告文件信息
+    const report = await ReportFile.findOne({
+      where: { 
+        id: reportId,
+        userId: req.user.id 
+      },
+      attributes: ['id', 'fileName', 'reportCategory', 'reportType', 'reportDateRange', 'createdAt']
+    });
+    
+    if (!report) {
+      return res.status(404).json({ message: '报告不存在' });
+    }
+    
+    // 获取搜索词报告数据
+    const searchTerms = await SearchTermReport.findAll({
+      where: { reportFileId: reportId },
+      attributes: [
+        'id', 'customerSearchTerm', 'campaignName'
+      ]
+    });
+    
+    // 按搜索词维度构建映射关系
+    const keywordMap = new Map();
+    
+    searchTerms.forEach(term => {
+      const keyword = term.customerSearchTerm;
+      const campaignName = term.campaignName;
+      
+      if (!keywordMap.has(keyword)) {
+        keywordMap.set(keyword, new Set());
+      }
+      
+      keywordMap.get(keyword).add(campaignName);
+    });
+    
+    // 构建响应数据
+    const keywordMappings = [];
+    let multiCampaignKeywords = 0;
+    let maxCampaignCount = 0;
+    
+    keywordMap.forEach((campaigns, keyword) => {
+      const campaignCount = campaigns.size;
+      
+      if (campaignCount > 1) {
+        multiCampaignKeywords++;
+      }
+      
+      if (campaignCount > maxCampaignCount) {
+        maxCampaignCount = campaignCount;
+      }
+      
+      keywordMappings.push({
+        keyword,
+        campaignCount,
+        campaigns: Array.from(campaigns)
+      });
+    });
+    
+    // 按照关联广告组数量降序排序
+    keywordMappings.sort((a, b) => b.campaignCount - a.campaignCount);    
+    res.json({
+      report: {
+        id: report.id,
+        fileName: report.fileName,
+        fileType: report.reportType,
+        reportDateRange: report.reportDateRange || '未知日期',
+        uploadedAt: report.createdAt
+      },
+      keywordMappingStats: {
+        totalKeywords: keywordMap.size,
+        multiCampaignKeywords,
+        maxCampaignCount,
+        keywordMappings
+      }
+    });
+  } catch (error) {
+    console.error('获取搜索词与广告组映射关系失败:', error);
+    res.status(500).json({ message: '服务器内部错误' });
+  }
+});
+
+// 获取多广告组搜索词详细数据
+router.get('/multi-campaign-keywords/:id', authenticate, async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    
+    // 获取报告文件信息
+    const report = await ReportFile.findOne({
+      where: { 
+        id: reportId,
+        userId: req.user.id 
+      },
+      attributes: ['id', 'fileName', 'reportCategory', 'reportType', 'reportDateRange', 'createdAt']
+    });
+    
+    if (!report) {
+      return res.status(404).json({ message: '报告不存在' });
+    }
+    
+    // 获取搜索词报告数据
+    const searchTerms = await SearchTermReport.findAll({
+      where: { reportFileId: reportId },
+      attributes: [
+        'id', 'customerSearchTerm', 'campaignName', 'impressions', 'clicks', 'orders',
+        'ctr', 'conversionRate', 'spend', 'sales'
+      ]
+    });
+    
+    // 按搜索词和广告组维度构建映射关系
+    const keywordCampaignMap = new Map();
+    
+    searchTerms.forEach(term => {
+      const keyword = term.customerSearchTerm;
+      const campaignName = term.campaignName;
+      
+      if (!keywordCampaignMap.has(keyword)) {
+        keywordCampaignMap.set(keyword, new Map());
+      }
+      
+      const campaignMap = keywordCampaignMap.get(keyword);
+      
+      if (!campaignMap.has(campaignName)) {
+        campaignMap.set(campaignName, {
+          campaignName,
+          impressions: 0,
+          clicks: 0,
+          orders: 0,
+          spend: 0,
+          sales: 0,
+          ctr: 0,
+          cvr: 0,
+          acos: 0,
+          roas: 0,
+          conversionRate: 0
+        });
+      }
+      
+      const campaignData = campaignMap.get(campaignName);
+      campaignData.impressions += parseInt(term.impressions) || 0;
+      campaignData.clicks += parseInt(term.clicks) || 0;
+      campaignData.orders += parseInt(term.orders) || 0;
+      campaignData.spend += parseFloat(term.spend) || 0;
+      campaignData.sales += parseFloat(term.sales) || 0;
+    });
+    
+    // 构建多广告组搜索词数据
+    const multiCampaignKeywords = [];
+    const allKeywordsWithOrders = [];
+    
+    keywordCampaignMap.forEach((campaignMap, keyword) => {
+      const campaignDetails = [];
+      let hasOrders = false;
+      
+      campaignMap.forEach(campaignData => {
+        // 计算指标
+        campaignData.ctr = campaignData.impressions > 0 ? 
+          (campaignData.clicks / campaignData.impressions) : 0;
+        
+        campaignData.conversionRate = campaignData.clicks > 0 ? 
+          (campaignData.orders / campaignData.clicks) : 0;
+        
+        campaignData.acos = campaignData.sales > 0 ? 
+          (campaignData.spend / campaignData.sales) : 0;
+        
+        campaignData.roas = campaignData.spend > 0 ? 
+          (campaignData.sales / campaignData.spend) : 0;
+        
+        campaignData.cvr = campaignData.conversionRate;
+        
+        campaignDetails.push(campaignData);
+        
+        // 检查是否有订单
+        if (campaignData.orders > 0) {
+          hasOrders = true;
+        }
+      });
+      
+      // 按照花费降序排序
+      campaignDetails.sort((a, b) => b.spend - a.spend);
+      
+      // 基础关键词数据结构
+      const keywordData = {
+        keyword,
+        campaignCount: campaignMap.size,
+        campaignDetails
+      };
+      
+      // 添加到适当的数组中
+      if (campaignMap.size > 1) {
+        multiCampaignKeywords.push(keywordData);
+      }
+      
+      // 如果有订单，添加到所有出单关键词
+      if (hasOrders) {
+        allKeywordsWithOrders.push(keywordData);
+      }
+    });
+    
+    // 按照关联广告组数量降序排序
+    multiCampaignKeywords.sort((a, b) => b.campaignCount - a.campaignCount);
+    
+    // 按照订单数量排序(通过计算总订单)
+    allKeywordsWithOrders.sort((a, b) => {
+      const aOrders = a.campaignDetails.reduce((sum, detail) => sum + detail.orders, 0);
+      const bOrders = b.campaignDetails.reduce((sum, detail) => sum + detail.orders, 0);
+      return bOrders - aOrders;
+    });
+    
+    res.json({
+      report: {
+        id: report.id,
+        fileName: report.fileName,
+        fileType: report.reportType,
+        reportDateRange: report.reportDateRange || '未知日期',
+        uploadedAt: report.createdAt
+      },
+      multiCampaignKeywords,
+      allKeywordsWithOrders
+    });
+  } catch (error) {
+    console.error('获取多广告组搜索词详细数据失败:', error);
     res.status(500).json({ message: '服务器内部错误' });
   }
 });

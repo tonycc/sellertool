@@ -8,7 +8,7 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   // 添加全局静默配置
-  silent: false
+  //silent: false
 });
 
 // 请求拦截器

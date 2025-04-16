@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import sequelize, { testConnection } from './config/database.js';
 import reportsRoutes from './routes/reports.js';
 import searchTermQuadrantRoutes from './routes/searchTermQuadrant.js';
+import adPlacementQuadrantRoutes from './routes/adPlacementQuadrant.js';
 
 // 加载环境变量
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(cors({
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/search-terms', searchTermQuadrantRoutes);
+app.use('/api/ad-placements', adPlacementQuadrantRoutes);
 
 // 数据库连接测试
 testConnection()

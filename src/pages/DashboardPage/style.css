@@ -1,0 +1,64 @@
+.dashboard-layout {
+  min-height: 100vh;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  
+}
+
+/* 右侧用户信息样式 */
+.right-content {
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.right-content .username {
+  margin-left: 8px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.dashboard-actions {
+  margin-top: 24px;
+}
+
+.action-card {
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+}
+
+.action-icon {
+  font-size: 48px;
+  color: #1890ff;
+  display: block;
+  margin: 16px 0;
+}
+
+.ant-statistic-title {
+  font-size: 16px;
+}
+
+.ant-statistic-content {
+  font-size: 24px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .dashboard-content {
+    margin: 12px;
+    padding: 12px;
+  }
+  
+  .action-icon {
+    font-size: 36px;
+    margin: 8px 0;
+  }
+}

@@ -56,6 +56,7 @@ ReportFile.init({
 ReportFile.associate = (models) => {
   ReportFile.belongsTo(models.User, { foreignKey: 'userId' });
   ReportFile.hasMany(models.SearchTermReport, { foreignKey: 'reportFileId' });
+  ReportFile.hasMany(models.AdPlacementReport, { foreignKey: 'reportFileId' });
 };
 
 export default ReportFile;

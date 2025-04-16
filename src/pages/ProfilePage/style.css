@@ -1,0 +1,75 @@
+.profile-page {
+  padding: 24px 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.profile-card {
+  text-align: center;
+  height: 100%;
+}
+
+.profile-avatar-container {
+  padding: 16px 0;
+}
+
+.profile-avatar {
+  margin-bottom: 16px;
+  background-color: #1890ff;
+}
+
+.profile-name {
+  margin-bottom: 8px;
+}
+
+.profile-email {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 0;
+}
+
+.account-info-card .ant-descriptions-item-label {
+  width: 120px;
+}
+
+.security-card {
+  margin-top: 24px;
+}
+
+.security-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.security-item-info {
+  flex: 1;
+}
+
+.security-item-info h5 {
+  margin-bottom: 4px;
+}
+
+.security-item-info p {
+  margin-bottom: 0;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .profile-card {
+    margin-bottom: 24px;
+  }
+  
+  .security-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .security-item button {
+    margin-top: 12px;
+  }
+}

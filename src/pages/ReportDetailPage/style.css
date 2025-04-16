@@ -1,48 +1,90 @@
-.report-detail-page {
-  padding: 24px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-  text-align: center;
-  position: relative;
-}
-
-.back-button {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-.upload-time {
-  color: rgba(0, 0, 0, 0.45);
-  margin-top: 8px;
-  
-}
-
 .summary-section {
-  margin-bottom: 24px;
+  border: none !important;
+}
+
+/* 添加横向统计卡片的样式 */
+.summary-section .ant-pro-card-body {
+  overflow-x: auto !important;
+  padding: 0px !important; /* 进一步减少内部填充 */
+  display: block !important; /* 确保正确显示 */
+}
+
+/* 覆盖ProCard的gutter属性 */
+.summary-section .ant-pro-card-col {
+  padding-left: 1px !important;
+  padding-right: 1px !important;
+}
+
+/* 强制覆盖ProCard的内部间距 */
+.summary-section .ant-pro-card-gutter {
+  margin: 0 !important;
+}
+
+/* 覆盖ProCard的行间距 */
+.summary-section .ant-pro-card-row {
+  margin: 0 !important;
+  row-gap: 0 !important;
+}
+
+/* 覆盖ProCard的列间距 */
+.summary-section .ant-pro-card-col {
+  padding: 0 !important;
+}
+
+.summary-section .ant-pro-card {
+  margin: 0 !important; /* 移除卡片外边距 */
+  width: 100% !important; /* 确保卡片占满容器宽度 */
+}
+
+/* 统计卡片行样式 */
+.stats-row {
+  display: flex;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  justify-content: space-between;
+}
+
+/* 统计卡片样式 */
+.stats-row .ant-pro-statistic-card {
+  flex: 1 1 80px !important;
+  min-width: 120px !important;
+  max-width: 200px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  border: none !important;
+  transition: all 0.3s ease;
+}
+
+/* 覆盖StatisticCard的内部样式 */
+.stats-row .ant-pro-statistic-card .ant-pro-card-body {
+  padding: 2px !important;
+}
+
+/* 确保统计卡片内容紧凑 */
+.stats-row .ant-pro-statistic-card .ant-statistic {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .metrics-card,
-.data-table-card,
 .chart-container {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border-radius: 8px;
   margin-bottom: 24px;
   transition: all 0.3s;
   height: auto;
-  min-height: 450px;
   width: 100%;
   overflow: visible; /* 确保内容不被裁剪 */
   position: relative;
-  display: flex;
-  flex-direction: column;
 }
 
-
-.metrics-card:hover,
-.data-table-card:hover {
+.metrics-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -52,7 +94,6 @@
   align-items: center;
   height: 400px;
 }
-
 
 /* 标签页样式 */
 .report-tabs {
@@ -68,77 +109,61 @@
   padding: 8px 16px;
 }
 
-/* 四象限分析样式 */
-.quadrant-summary {
-  margin-bottom: 24px;
+.report-detail-page {
+  width: auto;
+  padding: 0px;
+  background: #fff;
+  margin-top: -30px;
+  margin-left:-30px; 
 }
 
-.quadrant-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+/* 增强移动设备响应式样式 */
+@media (max-width: 768px) {
+  .stats-row {
+    gap: 6px !important;
+    padding: 2px !important;
+  }
+  
+  .stats-row .ant-pro-statistic-card {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 140px !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    gap: 4px !important;
+  }
+  
+  .stats-row .ant-pro-statistic-card {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+  }
+}
+/* 移动设备响应式样式 */
+@media (max-width: 768px) {
+  .report-detail-page .ant-pro-page-container-children-content {
+    margin: 0;
+  }
+}
+
+/* 搜索词表格样式 */
+.keyword-row {
+  background-color: #f8f8f8;
   transition: all 0.3s;
 }
 
-.quadrant-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-5px);
+.keyword-row:hover {
+  background-color: #f0f7ff;
 }
 
-.quadrant-card-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
+/* 嵌套表格样式 */
+.ant-table-expanded-row .ant-table-wrapper {
+  margin: 0 16px 16px 16px;
 }
 
-.quadrant-title {
-  margin-left: 8px;
+.ant-table-expanded-row .ant-table-wrapper .ant-table-thead > tr > th {
+  background-color: #f0f7ff;
   font-weight: 500;
-  font-size: 16px;
-}
-
-.help-icon {
-  margin-left: 8px;
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.star-card .quadrant-card-header {
-  color: #52c41a;
-}
-
-.problem-card .quadrant-card-header {
-  color: #fa8c16;
-}
-
-.potential-card .quadrant-card-header {
-  color: #1890ff;
-}
-
-.ineffective-card .quadrant-card-header {
-  color: #bfbfbf;
-}
-
-
-
-.keyword-tabs {
-  margin-top: 16px;
-}
-
-.keyword-tabs .ant-tabs-tab {
-  padding: 8px 16px;
-}
-
-@media (max-width: 768px) {
-  .report-detail-page {
-    padding: 16px 8px;
-  }
-  
-  .page-header {
-    margin-bottom: 16px;
-  }
-  
-  .back-button {
-    position: static;
-    margin-bottom: 16px;
-    display: block;
-  }
 }
